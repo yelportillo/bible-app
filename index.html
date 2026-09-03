@@ -235,6 +235,39 @@ button:active {
   background: linear-gradient(135deg, #ff6b81, #e54b63);
   box-shadow: 0 10px 20px rgba(229, 75, 99, 0.2);
 }
+
+.reaction-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.reaction-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(125, 215, 255, 0.25);
+  background: rgba(12, 39, 60, 0.85);
+  color: #eafcff;
+  padding: 7px 10px;
+  font-size: 12px;
+  border-radius: 999px;
+  box-shadow: none;
+  min-width: 56px;
+  justify-content: center;
+}
+
+.reaction-button.active {
+  background: linear-gradient(135deg, rgba(115, 212, 255, 0.32), rgba(80, 183, 255, 0.18));
+  border-color: rgba(120, 230, 255, 0.8);
+  box-shadow: 0 0 0 1px rgba(121, 220, 255, 0.28);
+}
+
+.reaction-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(30, 154, 219, 0.18);
+}
 </style>
 </head>
 
@@ -406,6 +439,56 @@ button:active {
     return userId;
   }
 
+  const reactionOptions = [
+    { key: 'pray', emoji: '🙏' },
+    { key: 'love', emoji: '❤️' },
+    { key: 'joy', emoji: '😄' },
+    { key: 'hope', emoji: '✨' }
+  ];
+
+  function getPrayerReactionMap() {
+    try {
+      return JSON.parse(localStorage.getItem('prayer_reactions')) || {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function setPrayerReactionMap(reactions) {
+    localStorage.setItem('prayer_reactions', JSON.stringify(reactions));
+  }
+
+  function getPrayerReactionState(prayerId) {
+    const reactionMap = getPrayerReactionMap();
+    const prayerReactions = reactionMap[prayerId] || {};
+    const counts = Object.fromEntries(reactionOptions.map((reaction) => [reaction.key, 0]));
+    Object.values(prayerReactions).forEach((reactionKey) => {
+      if (counts[reactionKey] !== undefined) {
+        counts[reactionKey] += 1;
+      }
+    });
+    return {
+      counts,
+      userReaction: prayerReactions[getCurrentUserId()] || null
+    };
+  }
+
+  function togglePrayerReaction(prayerId, reactionKey) {
+    const reactionMap = getPrayerReactionMap();
+    const prayerReactions = reactionMap[prayerId] || {};
+    const userId = getCurrentUserId();
+    const currentReaction = prayerReactions[userId];
+
+    if (currentReaction === reactionKey) {
+      delete prayerReactions[userId];
+    } else {
+      prayerReactions[userId] = reactionKey;
+    }
+
+    reactionMap[prayerId] = prayerReactions;
+    setPrayerReactionMap(reactionMap);
+  }
+
   function renderPrayerItems(prayers) {
     const list = document.getElementById('prayer-list');
     const currentUserId = getCurrentUserId();
@@ -421,14 +504,31 @@ button:active {
       div.className = 'prayer-item';
       const prayerText = p.content || p.prayer || '';
       const prayerName = p.name || 'Anonymous';
+      const prayerId = String(p.id || `${prayerName}-${prayerText}-${new Date().getTime()}`);
       const prayerDate = p.created_at ? new Date(p.created_at) : new Date(`${p.date} ${p.time || '00:00:00'}`);
       const isOwner = !!p.owner_id && p.owner_id === currentUserId;
       const canManage = !!p.id && isOwner;
+      const reactionState = getPrayerReactionState(prayerId);
 
       div.innerHTML = `
         <div class="prayer-name">${escapeHtml(prayerName)}</div>
         <div>${escapeHtml(prayerText)}</div>
         <div class="prayer-time">${prayerDate.toLocaleDateString()} at ${prayerDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
+        <div class="reaction-bar">
+          ${reactionOptions.map((reaction) => `
+            <button
+              type="button"
+              class="reaction-button ${reactionState.userReaction === reaction.key ? 'active' : ''}"
+              data-action="react"
+              data-prayer-id="${escapeHtml(prayerId)}"
+              data-reaction="${reaction.key}"
+              aria-label="React with ${reaction.key}"
+            >
+              <span>${reaction.emoji}</span>
+              <span>${reactionState.counts[reaction.key] || 0}</span>
+            </button>
+          `).join('')}
+        </div>
         ${canManage ? `
           <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
             <button type="button" data-action="edit" data-id="${p.id || ''}" style="padding:8px 12px; margin:0;">Edit</button>
@@ -439,6 +539,16 @@ button:active {
 
       const editButton = div.querySelector('[data-action="edit"]');
       const deleteButton = div.querySelector('[data-action="delete"]');
+      const reactionButtons = div.querySelectorAll('[data-action="react"]');
+
+      reactionButtons.forEach((button) => {
+        button.addEventListener('click', async () => {
+          const nextPrayerId = button.getAttribute('data-prayer-id');
+          const nextReactionKey = button.getAttribute('data-reaction');
+          togglePrayerReaction(nextPrayerId, nextReactionKey);
+          await displayPrayers();
+        });
+      });
 
       if (editButton && p.id) {
         editButton.addEventListener('click', async () => {
@@ -485,6 +595,9 @@ button:active {
           if (!supabase) {
             const localPrayers = getLocalPrayers().filter((item) => !(item.id === p.id || (item.prayer === prayerText && item.name === prayerName)));
             localStorage.setItem('prayers', JSON.stringify(localPrayers));
+            const reactionMap = getPrayerReactionMap();
+            delete reactionMap[p.id];
+            setPrayerReactionMap(reactionMap);
             await displayPrayers();
             return;
           }
