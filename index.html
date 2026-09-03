@@ -458,6 +458,9 @@ button:active {
     { key: 'hope', emoji: '✨' }
   ];
 
+  // In-memory map populated when using Supabase
+  let supabaseReactionMap = {};
+
   function getPrayerReactionMap() {
     try {
       return JSON.parse(localStorage.getItem('prayer_reactions')) || {};
@@ -471,31 +474,91 @@ button:active {
   }
 
   function getPrayerReactionState(prayerId) {
+    // Prefer Supabase-backed reactions when available
+    if (supabase && supabaseReactionMap && Object.keys(supabaseReactionMap).length > 0) {
+      const prayerReactions = supabaseReactionMap[prayerId] || {};
+      const counts = Object.fromEntries(reactionOptions.map((reaction) => [reaction.key, 0]));
+      Object.values(prayerReactions).forEach((reactionKey) => {
+        if (counts[reactionKey] !== undefined) counts[reactionKey] += 1;
+      });
+      return { counts, userReaction: prayerReactions[getCurrentUserId()] || null };
+    }
+
+    // Fallback to localStorage
     const reactionMap = getPrayerReactionMap();
     const prayerReactions = reactionMap[prayerId] || {};
     const counts = Object.fromEntries(reactionOptions.map((reaction) => [reaction.key, 0]));
     Object.values(prayerReactions).forEach((reactionKey) => {
-      if (counts[reactionKey] !== undefined) {
-        counts[reactionKey] += 1;
-      }
+      if (counts[reactionKey] !== undefined) counts[reactionKey] += 1;
     });
-    return {
-      counts,
-      userReaction: prayerReactions[getCurrentUserId()] || null
-    };
+    return { counts, userReaction: prayerReactions[getCurrentUserId()] || null };
   }
 
-  function togglePrayerReaction(prayerId, reactionKey) {
+  async function fetchSupabaseReactions(prayerIds) {
+    if (!supabase || !prayerIds || !prayerIds.length) return {};
+    try {
+      const { data, error } = await supabase
+        .from('prayer_reactions')
+        .select('prayer_id, user_id, reaction')
+        .in('prayer_id', prayerIds);
+      if (error) {
+        console.error('Failed to load reactions:', error);
+        return {};
+      }
+      const map = {};
+      data.forEach((r) => {
+        map[r.prayer_id] = map[r.prayer_id] || {};
+        map[r.prayer_id][r.user_id] = r.reaction;
+      });
+      return map;
+    } catch (err) {
+      console.error('fetchSupabaseReactions error:', err);
+      return {};
+    }
+  }
+
+  async function togglePrayerReaction(prayerId, reactionKey) {
+    // Supabase-backed path
+    if (supabase) {
+      const userId = getCurrentUserId();
+      try {
+        const { data: existing, error: selectErr } = await supabase
+          .from('prayer_reactions')
+          .select('id, reaction')
+          .eq('prayer_id', prayerId)
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (selectErr) {
+          console.error('Error checking existing reaction:', selectErr);
+          // Fall back to local behavior
+        } else if (existing) {
+          if (existing.reaction === reactionKey) {
+            const { error: delErr } = await supabase.from('prayer_reactions').delete().eq('id', existing.id);
+            if (delErr) console.error('Failed to delete reaction:', delErr);
+          } else {
+            const { error: updErr } = await supabase.from('prayer_reactions').update({ reaction: reactionKey }).eq('id', existing.id);
+            if (updErr) console.error('Failed to update reaction:', updErr);
+          }
+          return;
+        } else {
+          const { error: insErr } = await supabase.from('prayer_reactions').insert([{ prayer_id: prayerId, user_id: userId, reaction: reactionKey }]);
+          if (insErr) console.error('Failed to insert reaction:', insErr);
+          return;
+        }
+      } catch (err) {
+        console.error('Supabase toggle error:', err);
+        // fall through to local fallback
+      }
+    }
+
+    // LocalStorage fallback
     const reactionMap = getPrayerReactionMap();
     const prayerReactions = reactionMap[prayerId] || {};
     const userId = getCurrentUserId();
     const currentReaction = prayerReactions[userId];
 
-    if (currentReaction === reactionKey) {
-      delete prayerReactions[userId];
-    } else {
-      prayerReactions[userId] = reactionKey;
-    }
+    if (currentReaction === reactionKey) delete prayerReactions[userId];
+    else prayerReactions[userId] = reactionKey;
 
     reactionMap[prayerId] = prayerReactions;
     setPrayerReactionMap(reactionMap);
@@ -557,7 +620,7 @@ button:active {
         button.addEventListener('click', async () => {
           const nextPrayerId = button.getAttribute('data-prayer-id');
           const nextReactionKey = button.getAttribute('data-reaction');
-          togglePrayerReaction(nextPrayerId, nextReactionKey);
+          await togglePrayerReaction(nextPrayerId, nextReactionKey);
           await displayPrayers();
         });
       });
@@ -626,6 +689,17 @@ button:active {
             return;
           }
 
+          // Also remove any reactions for this prayer (best-effort)
+          try {
+            const { error: reacErr } = await supabase
+              .from('prayer_reactions')
+              .delete()
+              .eq('prayer_id', p.id);
+            if (reacErr) console.warn('Failed to delete prayer reactions:', reacErr);
+          } catch (err) {
+            console.warn('Error deleting reactions after prayer delete:', err);
+          }
+
           await displayPrayers();
         });
       }
@@ -654,7 +728,10 @@ button:active {
         return;
       }
 
-      renderPrayerItems(data || []);
+      const prayers = data || [];
+      const prayerIds = prayers.map((p) => String(p.id));
+      supabaseReactionMap = await fetchSupabaseReactions(prayerIds);
+      renderPrayerItems(prayers);
       return;
     }
 
