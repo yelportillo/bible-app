@@ -452,10 +452,10 @@ button:active {
   }
 
   const reactionOptions = [
-    { key: 'pray', emoji: '🙏🏼' },
-    { key: 'love', emoji: '🙌🏼' },
-    { key: 'joy', emoji: '❤️' },
-    { key: 'hope', emoji: '😇' }
+    { key: 'pray', emoji: '🙏' },
+    { key: 'love', emoji: '❤️' },
+    { key: 'joy', emoji: '😄' },
+    { key: 'hope', emoji: '✨' }
   ];
 
   // In-memory map populated when using Supabase
@@ -648,25 +648,41 @@ button:active {
           }
 
           if (!supabase) {
+            let updated = false;
             const localPrayers = getLocalPrayers().map((item) => {
               const matches = item.id === p.id || (item.prayer === prayerText && item.name === prayerName);
               if (!matches) return item;
+              updated = true;
               return { ...item, prayer: trimmed, owner_id: currentUserId };
             });
+            if (!updated) {
+              alert('This prayer could not be found.');
+              return;
+            }
             localStorage.setItem('prayers', JSON.stringify(localPrayers));
             await displayPrayers();
             return;
           }
 
-          const { error } = await supabase
+          const { data: updatedPrayers, error } = await supabase
             .from('prayers')
             .update({ content: trimmed })
             .eq('id', p.id)
-            .eq('owner_id', currentUserId);
+            .eq('owner_id', currentUserId)
+            .select('id');
 
           if (error) {
             console.error('Supabase prayer update failed:', error);
-            alert('Unable to update prayer right now.');
+            alert('Unable to edit prayer. Check the prayers table UPDATE policy in Supabase.');
+            return;
+          }
+
+          if (!updatedPrayers || updatedPrayers.length === 0) {
+            console.error('Supabase prayer update matched no rows.', {
+              prayerId: p.id,
+              ownerId: currentUserId
+            });
+            alert('This prayer could not be edited. Your Supabase UPDATE policy may be blocking it.');
             return;
           }
 
