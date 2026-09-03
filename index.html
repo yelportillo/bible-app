@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bible App</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(29, 84, 163, 0.6), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(76, 201, 240, 0.25), transparent 30%),
+    linear-gradient(135deg, #020b1b 0%, #041a35 35%, #0b2547 100%);
+  margin: 0;
+  min-height: 100vh;
+  padding: 48px 20px;
+  display: flex;
+  justify-content: center;
+  color: #edfaff;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.bg-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orb-1 {
+  width: 240px;
+  height: 240px;
+  background: rgba(31, 162, 255, 0.45);
+  top: 5%;
+  left: 8%;
+}
+
+.orb-2 {
+  width: 300px;
+  height: 300px;
+  background: rgba(110, 87, 255, 0.35);
+  right: 6%;
+  bottom: 10%;
+}
+ 
+#container {
+  background: rgba(2, 22, 43, 0.82);
+  border: 1px solid rgba(113, 237, 255, 0.25);
+  backdrop-filter: blur(10px);
+  max-width: 700px;
+  width: 100%;
+  padding: 32px 28px 30px;
+  border-radius: 24px;
+  box-shadow: 0 25px 60px rgba(1, 12, 23, 0.7), 0 0 0 1px rgba(82, 200, 255, 0.15);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+ 
+h2 {
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: #8ae9ff;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 10px rgba(54, 208, 255, 0.5);
+}
+ 
+#menu {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  font-size: 30px;
+  cursor: pointer;
+  user-select: none;
+  color: #9ae8ff;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(17, 53, 83, 0.8);
+  border: 1px solid rgba(129, 193, 255, 0.3);
+  transition: transform 0.2s ease;
+}
+
+#menu:hover {
+  transform: translateY(-1px);
+}
+ 
+ul.menu-items {
+  position: absolute;
+  top: 68px;
+  right: 22px;
+  background: rgba(8, 31, 50, 0.96);
+  border: 1px solid rgba(137, 214, 255, 0.25);
+  box-shadow: 0 18px 30px rgba(4, 18, 30, 0.7);
+  border-radius: 14px;
+  list-style: none;
+  padding: 10px 0;
+  margin: 0;
+  width: 190px;
+  display: none;
+  overflow: hidden;
+}
+ 
+ul.menu-items li {
+  padding: 12px 18px;
+  cursor: pointer;
+  color: #dff9ff;
+  transition: all 0.2s ease;
+}
+ 
+ul.menu-items li:hover {
+  background: linear-gradient(90deg, rgba(70, 183, 255, 0.2), rgba(93, 211, 255, 0.08));
+  color: #93ecff;
+}
+ 
+#date {
+  color: #9bd9ff;
+  margin: 0 0 20px;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+ 
+#verse {
+  font-size: clamp(1.15rem, 2vw, 1.7rem);
+  margin-bottom: 14px;
+  line-height: 1.5;
+  color: #f1fbff;
+  text-shadow: 0 0 12px rgba(73, 188, 255, 0.2);
+}
+ 
+#prayer {
+  font-style: italic;
+  font-size: 1rem;
+  color: #77ddff;
+  line-height: 1.7;
+  margin-bottom: 22px;
+  background: rgba(10, 38, 59, 0.8);
+  border-left: 3px solid #67d9ff;
+  border-radius: 14px;
+  padding: 16px 18px;
+  text-align: left;
+}
+ 
+button {
+  background: linear-gradient(135deg, #4cc8ff, #00a5df);
+  color: white;
+  border: none;
+  padding: 12px 22px;
+  font-size: 15px;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 12px 30px rgba(0, 160, 226, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  font-weight: 600;
+}
+ 
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 35px rgba(0, 160, 226, 0.45);
+}
+ 
+button:active {
+  transform: translateY(0);
+}
+ 
+#name, #prayerInput {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(94, 207, 255, 0.4);
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+  background: rgba(6, 31, 52, 0.8);
+  color: #f4fbff;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+#name:focus, #prayerInput:focus {
+  border-color: rgba(98, 233, 255, 0.9);
+  box-shadow: 0 0 0 3px rgba(83, 208, 255, 0.16);
+}
+ 
+#prayerInput {
+  min-height: 110px;
+  resize: vertical;
+}
+ 
+#prayer-list {
+  margin-top: 26px;
+}
+ 
+.prayer-item {
+  background: linear-gradient(180deg, rgba(13, 40, 65, 0.9), rgba(10, 31, 52, 0.9));
+  border: 1px solid rgba(109, 216, 255, 0.2);
+  border-left: 4px solid #3fc8ff;
+  border-radius: 16px;
+  padding: 18px 18px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.12);
+  text-align: left;
+}
+ 
+.prayer-name {
+  font-weight: 700;
+  color: #8de9ff;
+  margin-bottom: 10px;
+}
+ 
+.prayer-time {
+  font-size: 12px;
+  color: #a9dff9;
+  margin-top: 12px;
+  opacity: 0.9;
+}
+
+.prayer-item button {
+  padding: 8px 12px;
+  margin: 0;
+  font-size: 13px;
+  border-radius: 10px;
+}
+
+.prayer-item [data-action="delete"] {
+  background: linear-gradient(135deg, #ff6b81, #e54b63);
+  box-shadow: 0 10px 20px rgba(229, 75, 99, 0.2);
+}
+</style>
+</head>
+
+<body>
+<div class="bg-orb orb-1"></div>
+<div class="bg-orb orb-2"></div>
+
+<div id="container">
+  <div id="menu">☰</div>
+
+  <ul class="menu-items" id="menu-items">
+    <li>Verse of the Day</li>
+    <li>Prayer Wall</li>
+  </ul>
+
+  <!-- Verse Tab -->
+  <div id="verseTab">
+    <h2>Verse of the Day</h2>
+    <p id="date"></p>
+      <p id="verse">Loading verse...</p>
+      <p id="prayer"></p>
+      <div style="margin-top:12px;">
+        <button>Generate New Verse</button>
+      </div>
+      <p id="status" style="margin-top:12px; font-size:14px; color:#80e0ff;"></p>
+  </div>
+
+  <!-- Prayer Tab -->
+  <div id="prayerTab" style="display:none;">
+    <h2>Prayer Wall</h2>
+
+    <input
+      id="name"
+      placeholder="Your Name (optional)"
+      autocomplete="name"
+    />
+
+    <textarea
+      id="prayerInput"
+      placeholder="Write your prayer here..."
+      autocomplete="off"
+    ></textarea>
+
+    <button>Submit Prayer</button>
+
+    <div id="prayer-list"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  const SUPABASE_URL = 'https://dgefglljtuikcqmeuhod.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_VHCIynfkgNXVsv9l7jbbow_9HHAHOB0';
+
+  const supabase = window.supabase && !SUPABASE_URL.includes('YOUR_PROJECT_REF') && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE')
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
+  const verses = [
+    { text: 'John 3:16', verse: 'For God so loved the world, that He gave His only Son, that whoever believes in Him should not perish but have eternal life.' },
+    { text: 'Philippians 4:13', verse: 'I can do all things through Him who strengthens me.' },
+    { text: 'Psalm 23:1', verse: 'The Lord is my shepherd; I shall not want.' },
+    { text: 'Romans 8:28', verse: 'And we know that for those who love God all things work together for good.' },
+    { text: 'Proverbs 3:5', verse: 'Trust in the Lord with all your heart, and do not lean on your own understanding.' },
+    { text: 'Matthew 6:33', verse: 'But seek first the kingdom of God and His righteousness, and all these things will be added to you.' },
+    { text: 'Jeremiah 29:11', verse: 'For I know the plans I have for you, declares the Lord, plans for welfare and not for evil.' },
+    { text: 'Isaiah 40:31', verse: 'But they who wait for the Lord shall renew their strength.' },
+    { text: 'Psalm 46:10', verse: 'Be still, and know that I am God.' },
+    { text: 'Romans 12:2', verse: 'Do not be conformed to this world, but be transformed by the renewal of your mind.' },
+    { text: 'Ephesians 2:8', verse: 'For by grace you have been saved through faith. And this is not your own doing; it is the gift of God.' },
+    { text: '2 Corinthians 5:7', verse: 'For we walk by faith, not by sight.' },
+    { text: 'Psalm 91:1', verse: 'He who dwells in the shelter of the Most High will abide in the shadow of the Almighty.' },
+    { text: 'Matthew 11:28', verse: 'Come to me, all who labor and are heavy laden, and I will give you rest.' },
+    { text: 'Hebrews 11:1', verse: 'Now faith is the assurance of things hoped for, the conviction of things not seen.' },
+    { text: 'James 1:5', verse: 'If any of you lacks wisdom, let him ask God, who gives generously to all without reproach.' },
+    { text: '1 Peter 5:7', verse: 'Casting all your anxieties on Him, because He cares for you.' },
+    { text: 'Matthew 5:16', verse: 'Let your light shine before others, so that they may see your good works.' },
+    { text: 'Psalm 37:4', verse: 'Delight yourself in the Lord, and He will give you the desires of your heart.' },
+    { text: 'John 14:6', verse: "Jesus said, 'I am the way, and the truth, and the life. No one comes to the Father except through Me.'" },
+    { text: 'Colossians 3:23', verse: 'Whatever you do, work heartily, as for the Lord and not for men.' },
+    { text: 'Isaiah 41:10', verse: 'Fear not, for I am with you; be not dismayed, for I am your God.' },
+    { text: 'Psalm 34:8', verse: 'Oh, taste and see that the Lord is good! Blessed is the man who takes refuge in Him!' },
+    { text: 'Romans 5:8', verse: 'But God shows His love for us in that while we were still sinners, Christ died for us.' },
+    { text: 'Galatians 2:20', verse: 'I have been crucified with Christ. It is no longer I who live, but Christ who lives in me.' },
+    { text: 'Psalm 119:105', verse: 'Your word is a lamp to my feet and a light to my path.' },
+    { text: 'Matthew 28:19', verse: 'Go and make disciples of all nations.' },
+    { text: '2 Timothy 1:7', verse: 'For God gave us a spirit not of fear but of power and love and self-control.' },
+    { text: 'Psalm 100:4', verse: 'Enter His gates with thanksgiving, and His courts with praise!' },
+    { text: 'Revelation 21:4', verse: 'He will wipe away every tear from their eyes; and death shall be no more.' }
+  ];
+
+  function randomInt(max) {
+    return Math.floor(Math.random() * max);
+  }
+
+  function escapeHtml(text) {
+    const safeText = String(text ?? '');
+    return safeText.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+  }
+
+  function formatVersePrayer(reference, verseText) {
+    const refEsc = escapeHtml(reference || '');
+    const verseEsc = escapeHtml(verseText || '');
+    const templates = [
+      `Heavenly Father, we thank You for ${refEsc} — ${verseEsc} We praise Your holy name and trust in Your promises. Strengthen us to live this truth today. In Jesus' name, Amen.`,
+      `Lord God, as we reflect on ${refEsc} — ${verseEsc} fill our hearts with faith and courage to follow Your ways. Help us rely on Your wisdom and grace each moment. Amen.`,
+      `Gracious Father, ${verseEsc} (from ${refEsc}) reminds us of Your love and faithfulness. Guide our steps, forgive our shortcomings, and make us instruments of Your peace. Amen.`,
+      `O Lord, ${refEsc} teaches us that ${verseEsc} — may this word dwell richly in us. Give us the humility to obey, the patience to wait, and the joy of Your presence. Amen.`
+    ];
+    return `<div>${templates[randomInt(templates.length)]}</div>`;
+  }
+
+  function toggleMenu() {
+    const menu = document.getElementById('menu-items');
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  }
+
+  function hideMenu() {
+    const menu = document.getElementById('menu-items');
+    menu.style.display = 'none';
+  }
+
+  function showVerseTab() {
+    document.getElementById('verseTab').style.display = 'block';
+    document.getElementById('prayerTab').style.display = 'none';
+    hideMenu();
+  }
+
+  function showPrayerTab() {
+    document.getElementById('verseTab').style.display = 'none';
+    document.getElementById('prayerTab').style.display = 'block';
+    hideMenu();
+  }
+
+  function displayDate() {
+    const today = new Date();
+    document.getElementById('date').textContent = today.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  async function fetchRandomVerse() {
+    const chosenVerse = verses[randomInt(verses.length)];
+    const verseText = chosenVerse.verse;
+    const statusEl = document.getElementById('status');
+
+    document.getElementById('verse').textContent = `${chosenVerse.text} — ${verseText}`;
+    document.getElementById('prayer').innerHTML = formatVersePrayer(chosenVerse.text, verseText);
+    if (statusEl) statusEl.textContent = '';
+  }
+
+  function getLocalPrayers() {
+    return JSON.parse(localStorage.getItem('prayers')) || [];
+  }
+
+  function getCurrentUserId() {
+    const key = 'prayer_wall_user_id';
+    let userId = localStorage.getItem(key);
+    if (!userId) {
+      userId = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `guest-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      localStorage.setItem(key, userId);
+    }
+    return userId;
+  }
+
+  function renderPrayerItems(prayers) {
+    const list = document.getElementById('prayer-list');
+    const currentUserId = getCurrentUserId();
+    list.innerHTML = '';
+
+    if (!prayers.length) {
+      list.innerHTML = '<div class="prayer-item">No prayers yet. Be the first to pray.</div>';
+      return;
+    }
+
+    prayers.forEach((p) => {
+      const div = document.createElement('div');
+      div.className = 'prayer-item';
+      const prayerText = p.content || p.prayer || '';
+      const prayerName = p.name || 'Anonymous';
+      const prayerDate = p.created_at ? new Date(p.created_at) : new Date(`${p.date} ${p.time || '00:00:00'}`);
+      const isOwner = !!p.owner_id && p.owner_id === currentUserId;
+      const canManage = !!p.id && isOwner;
+
+      div.innerHTML = `
+        <div class="prayer-name">${escapeHtml(prayerName)}</div>
+        <div>${escapeHtml(prayerText)}</div>
+        <div class="prayer-time">${prayerDate.toLocaleDateString()} at ${prayerDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
+        ${canManage ? `
+          <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+            <button type="button" data-action="edit" data-id="${p.id || ''}" style="padding:8px 12px; margin:0;">Edit</button>
+            <button type="button" data-action="delete" data-id="${p.id || ''}" style="padding:8px 12px; margin:0; background:#ff5d73; box-shadow:none;">Delete</button>
+          </div>
+        ` : ''}
+      `;
+
+      const editButton = div.querySelector('[data-action="edit"]');
+      const deleteButton = div.querySelector('[data-action="delete"]');
+
+      if (editButton && p.id) {
+        editButton.addEventListener('click', async () => {
+          const currentPrayer = prompt('Edit your prayer:', prayerText);
+          if (currentPrayer === null) return;
+          const trimmed = currentPrayer.trim();
+          if (!trimmed) {
+            alert('Prayer cannot be empty.');
+            return;
+          }
+
+          if (!supabase) {
+            const localPrayers = getLocalPrayers().map((item) => {
+              const matches = item.id === p.id || (item.prayer === prayerText && item.name === prayerName);
+              if (!matches) return item;
+              return { ...item, prayer: trimmed, owner_id: currentUserId };
+            });
+            localStorage.setItem('prayers', JSON.stringify(localPrayers));
+            await displayPrayers();
+            return;
+          }
+
+          const { error } = await supabase
+            .from('prayers')
+            .update({ content: trimmed })
+            .eq('id', p.id)
+            .eq('owner_id', currentUserId);
+
+          if (error) {
+            console.error('Supabase prayer update failed:', error);
+            alert('Unable to update prayer right now.');
+            return;
+          }
+
+          await displayPrayers();
+        });
+      }
+
+      if (deleteButton && p.id) {
+        deleteButton.addEventListener('click', async () => {
+          const confirmed = window.confirm('Delete this prayer?');
+          if (!confirmed) return;
+
+          if (!supabase) {
+            const localPrayers = getLocalPrayers().filter((item) => !(item.id === p.id || (item.prayer === prayerText && item.name === prayerName)));
+            localStorage.setItem('prayers', JSON.stringify(localPrayers));
+            await displayPrayers();
+            return;
+          }
+
+          const { error } = await supabase
+            .from('prayers')
+            .delete()
+            .eq('id', p.id)
+            .eq('owner_id', currentUserId);
+
+          if (error) {
+            console.error('Supabase prayer delete failed:', error);
+            alert('Unable to delete prayer right now.');
+            return;
+          }
+
+          await displayPrayers();
+        });
+      }
+
+      list.appendChild(div);
+    });
+  }
+
+  async function displayPrayers() {
+    const list = document.getElementById('prayer-list');
+    list.innerHTML = '<div class="prayer-item">Loading prayers...</div>';
+
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('prayers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase fetch failed:', error);
+        if (error.code === '42501') {
+          list.innerHTML = '<div class="prayer-item">Supabase needs SELECT permission on the prayers table. Run: GRANT SELECT ON public.prayers TO anon;</div>';
+        } else {
+          list.innerHTML = '<div class="prayer-item">Unable to load prayers right now.</div>';
+        }
+        return;
+      }
+
+      renderPrayerItems(data || []);
+      return;
+    }
+
+    renderPrayerItems(getLocalPrayers());
+  }
+
+  async function submitPrayer() {
+    const name = document.getElementById('name').value.trim() || 'Anonymous';
+    const prayer = document.getElementById('prayerInput').value.trim();
+
+    if (!prayer) {
+      alert('Please enter a prayer.');
+      return;
+    }
+
+    const ownerId = getCurrentUserId();
+
+    if (supabase) {
+      const { error } = await supabase.from('prayers').insert([{ name, content: prayer, owner_id: ownerId }]);
+      if (error) {
+        console.error('Supabase prayer insert failed:', error);
+        if (error.code === '42501') {
+          alert('Supabase needs permission to insert prayers. Run: GRANT INSERT ON public.prayers TO anon;');
+        } else {
+          alert('Failed to save prayer. Please try again.');
+        }
+        return;
+      }
+    } else {
+      const now = new Date();
+      const entry = {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name,
+        prayer,
+        owner_id: ownerId,
+        date: now.toLocaleDateString(),
+        time: now.toLocaleTimeString()
+      };
+      const prayers = JSON.parse(localStorage.getItem('prayers')) || [];
+      prayers.unshift(entry);
+      localStorage.setItem('prayers', JSON.stringify(prayers));
+    }
+
+    document.getElementById('name').value = '';
+    document.getElementById('prayerInput').value = '';
+    await displayPrayers();
+  }
+
+  function initializeApp() {
+    if (window.__prayerAppInitialized) return;
+    window.__prayerAppInitialized = true;
+
+    displayDate();
+    fetchRandomVerse();
+    displayPrayers();
+
+    const menuButton = document.getElementById('menu');
+    const menuList = document.getElementById('menu-items');
+    if (menuButton) menuButton.addEventListener('click', toggleMenu);
+    const verseMenuItem = menuList?.querySelectorAll('li')[0];
+    const prayerMenuItem = menuList?.querySelectorAll('li')[1];
+    if (verseMenuItem) verseMenuItem.addEventListener('click', showVerseTab);
+    if (prayerMenuItem) prayerMenuItem.addEventListener('click', showPrayerTab);
+    const verseButton = document.querySelector('#verseTab button');
+    const submitButton = document.querySelector('#prayerTab button');
+    if (verseButton) verseButton.addEventListener('click', fetchRandomVerse);
+    if (submitButton) submitButton.addEventListener('click', submitPrayer);
+
+    document.addEventListener('click', (event) => {
+      const menu = document.getElementById('menu-items');
+      const menuButtonEl = document.getElementById('menu');
+      if (!menu || !menuButtonEl) return;
+      const target = event.target;
+      if (menu.style.display === 'block' && !menu.contains(target) && target !== menuButtonEl) {
+        menu.style.display = 'none';
+      }
+    });
+  }
+
+  window.toggleMenu = toggleMenu;
+  window.hideMenu = hideMenu;
+  window.showVerseTab = showVerseTab;
+  window.showPrayerTab = showPrayerTab;
+  window.displayDate = displayDate;
+  window.fetchRandomVerse = fetchRandomVerse;
+  window.submitPrayer = submitPrayer;
+  window.displayPrayers = displayPrayers;
+  window.initializeApp = initializeApp;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp, { once: true });
+  } else {
+    initializeApp();
+  }
+})();
+</script>
+
+
+</body>
+</html>
