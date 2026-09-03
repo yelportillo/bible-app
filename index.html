@@ -424,7 +424,19 @@ button:active {
   }
 
   function getLocalPrayers() {
-    return JSON.parse(localStorage.getItem('prayers')) || [];
+    const raw = JSON.parse(localStorage.getItem('prayers')) || [];
+    let changed = false;
+    const normalized = raw.map((item) => {
+      if (!item.id) {
+        item.id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        changed = true;
+      }
+      return item;
+    });
+    if (changed) {
+      localStorage.setItem('prayers', JSON.stringify(normalized));
+    }
+    return normalized;
   }
 
   function getCurrentUserId() {
