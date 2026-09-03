@@ -677,15 +677,25 @@ button:active {
             return;
           }
 
-          const { error } = await supabase
+          const { data: deletedPrayers, error } = await supabase
             .from('prayers')
             .delete()
             .eq('id', p.id)
-            .eq('owner_id', currentUserId);
+            .eq('owner_id', currentUserId)
+            .select('id');
 
           if (error) {
             console.error('Supabase prayer delete failed:', error);
-            alert('Unable to delete prayer right now.');
+            alert('Unable to delete prayer. Check the prayers table DELETE policy in Supabase.');
+            return;
+          }
+
+          if (!deletedPrayers || deletedPrayers.length === 0) {
+            console.error('Supabase prayer delete matched no rows.', {
+              prayerId: p.id,
+              ownerId: currentUserId
+            });
+            alert('This prayer could not be deleted. Your Supabase DELETE policy may be blocking it.');
             return;
           }
 
