@@ -474,8 +474,7 @@ button:active {
   }
 
   function getPrayerReactionState(prayerId) {
-    // Prefer Supabase-backed reactions when available
-    if (supabase && supabaseReactionMap && Object.keys(supabaseReactionMap).length > 0) {
+    if (supabase) {
       const prayerReactions = supabaseReactionMap[prayerId] || {};
       const counts = Object.fromEntries(reactionOptions.map((reaction) => [reaction.key, 0]));
       Object.values(prayerReactions).forEach((reactionKey) => {
@@ -484,7 +483,6 @@ button:active {
       return { counts, userReaction: prayerReactions[getCurrentUserId()] || null };
     }
 
-    // Fallback to localStorage
     const reactionMap = getPrayerReactionMap();
     const prayerReactions = reactionMap[prayerId] || {};
     const counts = Object.fromEntries(reactionOptions.map((reaction) => [reaction.key, 0]));
@@ -518,40 +516,54 @@ button:active {
   }
 
   async function togglePrayerReaction(prayerId, reactionKey) {
-    // Supabase-backed path
     if (supabase) {
       const userId = getCurrentUserId();
-      try {
-        const { data: existing, error: selectErr } = await supabase
+      const { data: existing, error: selectError } = await supabase
+        .from('prayer_reactions')
+        .select('id, reaction')
+        .eq('prayer_id', prayerId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (selectError) {
+        console.error('Error checking existing reaction:', selectError);
+        alert('Unable to save reaction. Check the prayer_reactions table permissions in Supabase.');
+        return;
+      }
+
+      if (existing && existing.reaction === reactionKey) {
+        const { error } = await supabase
           .from('prayer_reactions')
-          .select('id, reaction')
-          .eq('prayer_id', prayerId)
-          .eq('user_id', userId)
-          .maybeSingle();
-        if (selectErr) {
-          console.error('Error checking existing reaction:', selectErr);
-          // Fall back to local behavior
-        } else if (existing) {
-          if (existing.reaction === reactionKey) {
-            const { error: delErr } = await supabase.from('prayer_reactions').delete().eq('id', existing.id);
-            if (delErr) console.error('Failed to delete reaction:', delErr);
-          } else {
-            const { error: updErr } = await supabase.from('prayer_reactions').update({ reaction: reactionKey }).eq('id', existing.id);
-            if (updErr) console.error('Failed to update reaction:', updErr);
-          }
-          return;
-        } else {
-          const { error: insErr } = await supabase.from('prayer_reactions').insert([{ prayer_id: prayerId, user_id: userId, reaction: reactionKey }]);
-          if (insErr) console.error('Failed to insert reaction:', insErr);
+          .delete()
+          .eq('id', existing.id);
+        if (error) {
+          console.error('Failed to remove reaction:', error);
+          alert('Unable to remove reaction right now.');
           return;
         }
-      } catch (err) {
-        console.error('Supabase toggle error:', err);
-        // fall through to local fallback
+      } else if (existing) {
+        const { error } = await supabase
+          .from('prayer_reactions')
+          .update({ reaction: reactionKey })
+          .eq('id', existing.id);
+        if (error) {
+          console.error('Failed to update reaction:', error);
+          alert('Unable to save reaction right now.');
+          return;
+        }
+      } else {
+        const { error } = await supabase
+          .from('prayer_reactions')
+          .insert([{ prayer_id: prayerId, user_id: userId, reaction: reactionKey }]);
+        if (error) {
+          console.error('Failed to insert reaction:', error);
+          alert('Unable to save reaction. Check the prayer_reactions table permissions in Supabase.');
+          return;
+        }
       }
+      return;
     }
 
-    // LocalStorage fallback
     const reactionMap = getPrayerReactionMap();
     const prayerReactions = reactionMap[prayerId] || {};
     const userId = getCurrentUserId();
