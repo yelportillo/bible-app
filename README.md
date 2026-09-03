@@ -70,7 +70,3 @@ Make sure your Supabase project has:
 🙏 Purpose
 
 The goal of this project is to create a simple space where people can read Scripture, reflect through prayer, and encourage others through a shared prayer wall.
-
-📜 License
-
-This project is open source. Add your preferred license here, such as the MIT License.
