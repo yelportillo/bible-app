@@ -28,45 +28,49 @@ A modern, responsive Bible web app designed to encourage daily Scripture reading
 
 The application uses a Supabase publishable key for frontend database access.
 
-Row Level Security (RLS) should be enabled on the Supabase prayers table to control database access.
+Row Level Security (RLS) is enabled on the Supabase prayers table.
 
 Never expose a Supabase service_role key or other secret credentials in frontend code or GitHub.
 
 🚀 Getting Started
 
-1. Clone the repository
+Clone the Repository
 
-git clone https://github.com/YOUR-USERNAME/YOUR-REPOSITORY.git
-cd YOUR-REPOSITORY
+git clone https://github.com/yelportillo/bible-app.git
+cd bible-app
 
-2. Open the app
+Run Locally
 
-This project does not require a build system.
+The project doesn’t require a build system. You can open index.html directly in your browser.
 
-You can open index.html directly in your browser, or serve it with a local web server:
+Alternatively, run a local web server:
 
 python3 -m http.server 8000
 
-Then visit:
+Then open:
 
 http://localhost:8000
 
 ⚙️ Supabase
 
-The app connects to Supabase using the JavaScript client.
+The app uses Supabase to store prayers submitted to the Prayer Wall.
 
-Make sure your Supabase project has:
+Your Supabase project should have:
 
 * A prayers table
 * Row Level Security enabled
-* Appropriate policies for reading, creating, updating, and deleting prayers
+* Appropriate policies for reading, inserting, updating, and deleting prayers
 
 📁 Project Structure
 
-.
+bible-app/
 ├── index.html
 └── README.md
 
 🙏 Purpose
 
-The goal of this project is to create a simple space where people can read Scripture, reflect through prayer, and encourage others through a shared prayer wall.
+The goal of this project is to create a simple space where people can read Scripture, reflect through prayer, and encourage others through a shared Prayer Wall.
+
+⸻
+
+GitHub: https://github.com/yelportillo/bible-app
